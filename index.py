@@ -1,15 +1,30 @@
 import sys
+import urllib.request
 import requests
+import os
+import shutil
 import json
 from bs4 import BeautifulSoup
 
 if __name__ == "__main__":
     url = sys.argv[1]   # console에서 url 인자를 받아서 쓴다
     req = requests.get(url)
+    file_name = url.split("=")[-1]  # 이미지나 최종 결과 저장 시 사용할 url 파라미터
     html = req.text
     soup = BeautifulSoup(html, 'html.parser')
 
     links = soup.select('body > div.l-content > ul.c-cards.js-masonry-container.content-start-line > li > a')
+
+    img_path = './%s' % file_name   # 이미지를 저장할 폴더 생성 (이미 존재하면 덮어쓰기)
+    if not os.path.exists(img_path):
+        oldmask = os.umask(000)
+        os.makedirs(img_path, 0o777)    # octal literals 는 0 대신에 0o나 0O를 사용해야 한대...
+        os.umask(oldmask)
+    else:
+        shutil.rmtree('./%s' % file_name)
+        oldmask = os.umask(000)
+        os.makedirs(img_path, 0o777)  # octal literals 는 0 대신에 0o나 0O를 사용해야 한대...
+        os.umask(oldmask)
 
     album_links = []
     for link in links:
@@ -62,14 +77,20 @@ if __name__ == "__main__":
 
         for i, image_key in enumerate(image_keys):
             key = image_key.text.strip()
-            album_detail[key]["image"] = images[i].get('src')
+            img_url = images[i].get('src')
+            album_detail[key]["image"] = img_url
+
+            # 앨범 커버 저장
+            img_type = img_url.split('/')[-1]
+            img_file_name = "%d_%s_%s_%s" % (index, title.replace("/", ""), key.replace("/", ""), img_type)
+            r = requests.get(img_url, allow_redirects=True)
+            open("%s/%s" % (img_path, img_file_name), 'wb').write(r.content)        # w(write) b(binary mode)
 
         discography[index] = album_detail
 
     json_result = json.dumps(discography, ensure_ascii=False)
     result = json_result.replace('\\n', ' ').replace('\\r', ' ')
 
-    file_name = url.split("=")[-1]
     f = open("arashi_%s.json" % file_name, "w")
     f.write(result)
     f.close()
