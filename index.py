@@ -15,8 +15,53 @@ if __name__ == "__main__":
     for link in links:
         album_links.append(link.get('href'))
 
-    discograpy = {}  # 앨범 순서대로 0 : {상세}, 1: {상세} 형태로 저장할 수 있도록 딕셔너리 변수를 만든다.
+    discography = {}  # 앨범 순서대로 0 : {상세}, 1: {상세} 형태로 저장할 수 있도록 딕셔너리 변수를 만든다.
     for index, album_link in enumerate(album_links):
         req = requests.get(album_link)
         html = req.content          # req.text로 가져오니 문자가 깨지는 문제가 발생하여 대신 req.content 형태로 가져온다. http://ourcstory.tistory.com/78 참고
         soup = BeautifulSoup(html, 'html.parser', from_encoding='utf-8')
+
+        album_detail = {}   # discography 의 vaule 값으로 넣어줄 변수 생성
+
+        # 통상반 한정반 공통 정보
+        title = soup.select_one(
+            'body > div.l-content > div.c-disco.detail.content-start-line > div.c-disco__title').text
+        release = soup.select_one(
+            'body > div.l-content > div.c-disco.detail.content-start-line > div.c-disco__meta').text
+
+        album_detail["title"] = title   # 제목 & 발매일
+        album_detail["release"] = release   # 제목 & 발매일
+
+        album_infos = soup.select('body > div.l-content > div.c-boxs.js-masonry-container > div.c-box')
+        for i, album_type in enumerate(album_infos):
+            cho_or_tong = album_infos[i].select_one(
+                '.c-lineupHeader .c-lineupHeader__title').text.strip()  # 앨범 타입 초회한정반 or 통상
+            album_detail[cho_or_tong] = {}
+            album_type_details = album_infos[i].select('.c-lineupBody')  # 타입별 상세들
+
+            for j, album_type_detail in enumerate(album_type_details):
+                include = album_type_details[j].select_one('.c-lineupBody__block').text if album_type_details[
+                    j].select_one('.c-lineupBody__block') else ""  # 가사집 정보
+                album_detail[cho_or_tong]["include"] = include
+
+                cd_and_dvds = album_type_details[j].select_one('.c-lineupBody__heading').text
+                album_detail[cho_or_tong]["config"] = cd_and_dvds
+
+                track_lists = album_type_details[j].select(
+                    '.c-lineupTrackList > .c-lineupTrack > .c-lineupTrack__title')
+                track_arr = []
+                for track_list in track_lists:
+                    track_arr.append(track_list.text.strip())
+                album_detail[cho_or_tong]["track"] = track_arr
+
+        # 각각 서브 정보들
+        images = soup.select(
+            'body > div.l-content > div.c-disco.detail.content-start-line > div.c-discoJackets > div.c-discoJacket > div.c-discoJacket__img > img')
+        image_keys = soup.select(
+            'body > div.l-content > div.c-disco.detail.content-start-line > div.c-discoJackets > div.c-discoJacket > div.c-discoJacket__name')
+
+        for i, image_key in enumerate(image_keys):
+            key = image_key.text.strip()
+            album_detail[key]["image"] = images[i].get('src')
+
+        discography[index] = album_detail
