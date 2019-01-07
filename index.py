@@ -65,3 +65,11 @@ if __name__ == "__main__":
             album_detail[key]["image"] = images[i].get('src')
 
         discography[index] = album_detail
+
+    json_result = json.dumps(discography, ensure_ascii=False)
+    result = json_result.replace('\\n', ' ').replace('\\r', ' ')
+
+    file_name = url.split("=")[-1]
+    f = open("arashi_%s.json" % file_name, "w")
+    f.write(result)
+    f.close()
