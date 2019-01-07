@@ -11,3 +11,7 @@ if __name__ == "__main__":
 
     links = soup.select('body > div.l-content > ul.c-cards.js-masonry-container.content-start-line > li > a')
 
+    album_links = []
+    for link in links:
+        album_links.append(link.get('href'))
+
