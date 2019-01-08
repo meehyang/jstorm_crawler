@@ -54,20 +54,41 @@ if __name__ == "__main__":
             album_detail[cho_or_tong] = {}
             album_type_details = album_infos[i].select('.c-lineupBody')  # 타입별 상세들
 
+
             for j, album_type_detail in enumerate(album_type_details):
                 include = album_type_details[j].select_one('.c-lineupBody__block').text if album_type_details[
                     j].select_one('.c-lineupBody__block') else ""  # 가사집 정보
                 album_detail[cho_or_tong]["include"] = include
 
-                cd_and_dvds = album_type_details[j].select_one('.c-lineupBody__heading').text
-                album_detail[cho_or_tong]["config"] = cd_and_dvds
+                # cd_and_dvds = album_type_details[j].select('.c-lineupBody__heading')
+                # print(cd_and_dvds[j].text)
+                # track_lists = album_type_details[j].select(
+                #     '.c-lineupTrackList > .c-lineupTrack > .c-lineupTrack__title')
+                # track_arr = []
+                # for track_list in track_lists:
+                #     track_arr.append(track_list.text.strip())
 
-                track_lists = album_type_details[j].select(
-                    '.c-lineupTrackList > .c-lineupTrack > .c-lineupTrack__title')
+                # album_detail[cho_or_tong] = {cd_and_dvds[j].text, track_arr}
+
+            album_type_infos = album_infos[i].select('.c-lineupBody .c-lineupBody__heading')  # 타입별 상세들
+            album_track_infos = album_infos[i].select('.c-lineupBody .c-lineupTrackList')  # tracklist
+
+            track_dictionary = {}
+            track_arr = []
+            for at, album_track_info in enumerate(album_track_infos):
+                tracks = album_track_info.select('.c-lineupTrack .c-lineupTrack__title')
+                for track in tracks:
+                    # print(track.text.strip())
+                    track_arr.append(track.text.strip())
+
+                track_dictionary[at] = track_arr
                 track_arr = []
-                for track_list in track_lists:
-                    track_arr.append(track_list.text.strip())
-                album_detail[cho_or_tong]["track"] = track_arr
+
+            for t, album_type_info in enumerate(album_type_infos):
+                disk_type = album_type_info.text
+                album_detail[cho_or_tong][disk_type] = {}
+                album_detail[cho_or_tong][disk_type] = track_dictionary[t]
+
 
         # 각각 서브 정보들
         images = soup.select(
