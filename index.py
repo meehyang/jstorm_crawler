@@ -10,6 +10,8 @@ if __name__ == "__main__":
     url = sys.argv[1]   # console에서 url 인자를 받아서 쓴다
     req = requests.get(url)
     file_name = url.split("=")[-1]  # 이미지나 최종 결과 저장 시 사용할 url 파라미터
+    if file_name is None:
+        file_name = "discography"
     html = req.text
     soup = BeautifulSoup(html, 'html.parser')
 
@@ -48,27 +50,20 @@ if __name__ == "__main__":
         album_detail["release"] = release   # 제목 & 발매일
 
         album_infos = soup.select('body > div.l-content > div.c-boxs.js-masonry-container > div.c-box')
+
         for i, album_type in enumerate(album_infos):
             cho_or_tong = album_infos[i].select_one(
                 '.c-lineupHeader .c-lineupHeader__title').text.strip()  # 앨범 타입 초회한정반 or 통상
-            album_detail[cho_or_tong] = {}
-            album_type_details = album_infos[i].select('.c-lineupBody')  # 타입별 상세들
 
+            album_detail["%d_%s" % (i, cho_or_tong)] = {}
+            album_type_details = album_infos[i].select('.c-lineupBody')  # 타입별 상세들
 
             for j, album_type_detail in enumerate(album_type_details):
                 include = album_type_details[j].select_one('.c-lineupBody__block').text if album_type_details[
                     j].select_one('.c-lineupBody__block') else ""  # 가사집 정보
-                album_detail[cho_or_tong]["include"] = include
 
-                # cd_and_dvds = album_type_details[j].select('.c-lineupBody__heading')
-                # print(cd_and_dvds[j].text)
-                # track_lists = album_type_details[j].select(
-                #     '.c-lineupTrackList > .c-lineupTrack > .c-lineupTrack__title')
-                # track_arr = []
-                # for track_list in track_lists:
-                #     track_arr.append(track_list.text.strip())
+                album_detail["%d_%s" % (i, cho_or_tong)]["include"] = include
 
-                # album_detail[cho_or_tong] = {cd_and_dvds[j].text, track_arr}
 
             album_type_infos = album_infos[i].select('.c-lineupBody .c-lineupBody__heading')  # 타입별 상세들
             album_track_infos = album_infos[i].select('.c-lineupBody .c-lineupTrackList')  # tracklist
@@ -86,8 +81,9 @@ if __name__ == "__main__":
 
             for t, album_type_info in enumerate(album_type_infos):
                 disk_type = album_type_info.text
-                album_detail[cho_or_tong][disk_type] = {}
-                album_detail[cho_or_tong][disk_type] = track_dictionary[t]
+
+                album_detail["%d_%s" % (i, cho_or_tong)][disk_type] = {}
+                album_detail["%d_%s" % (i, cho_or_tong)][disk_type] = track_dictionary[t]
 
 
         # 각각 서브 정보들
@@ -97,7 +93,7 @@ if __name__ == "__main__":
             'body > div.l-content > div.c-disco.detail.content-start-line > div.c-discoJackets > div.c-discoJacket > div.c-discoJacket__name')
 
         for i, image_key in enumerate(image_keys):
-            key = image_key.text.strip()
+            key = '%d_%s' % (i, image_key.text.strip())
             img_url = images[i].get('src')
             album_detail[key]["image"] = img_url
 
